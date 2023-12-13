@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            color: #495057;
+        }
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #000;
+        }
+
+        form {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+            text-align: left;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #outputContainer {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        #predictionResult {
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        /* Updated styles for positive and negative sentiment */
+        .positive {
+            color: green;
+        }
+
+        .negative {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <h1>Sentiment Analysis App</h1>
+        <form id="sentimentForm">
+            <label for="fileInput">Select File for Sentiment Analysis:</label>
+            <input type="file" id="fileInput" name="fileInput">
+            <br>
+            <label for="textInput">Or enter text:</label>
+            <textarea id="textInput" name="textInput" rows="8" placeholder="Enter text"></textarea>
+            <button type="button" onclick="predictSentiment()">Predict Sentiment</button>
+        </form>
+        <div id="outputContainer">
+            <div id="predictionResult"></div>
+        </div>
+    </div>
+
+  <script>
+    function predictSentiment() {
+        // Reset the output container
+        document.getElementById('predictionResult').innerHTML = '';
+
+        var fileInput = document.getElementById('fileInput');
+        var textInput = document.getElementById('textInput');
+
+        // Check if a file is selected
+        if (fileInput.files.length > 0) {
+            var file = fileInput.files[0];
+            var reader = new FileReader();
+
+            reader.onload = function (event) {
+                var fileContent = event.target.result;
+                // Split content based on %%
+                var inputSegments = fileContent.split('%%');
+                
+                // Send each segment for prediction
+                inputSegments.forEach(function(segment) {
+                    sendPredictionRequest(segment.trim());
+                });
+            };
+
+            reader.readAsText(file);
+        } else {
+            var textContent = textInput.value;
+            // If text input is not empty, send for prediction
+            if (textContent.trim() !== '') {
+                sendPredictionRequest(textContent);
+            }
+        }
+    }
+
+    function sendPredictionRequest(inputData) {
+        // Make a POST request to the /predict endpoint
+        fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    data: inputData
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayResults(data, inputData);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+
+    function displayResults(data, inputData) {
+        // Display predictions with input data
+        var resultHtml = '<table border="1" cellpadding="10">';
+        resultHtml += '<tr><th>Input Data</th><th>Predictions</th></tr>';
+        resultHtml += '<tr><td>' + inputData + '</td><td>' + data.predictions + '</td></tr>';
+        resultHtml += '</table>';
+        document.getElementById('predictionResult').innerHTML += resultHtml;
+    }
+</script>
+
+</body>
+
+</html>
